@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "Represents a portfolio project.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "The title of the project." },
+        "shortDescription": { "type": "string", "description": "Snippet for the grid view." },
+        "fullDescription": { "type": "string", "description": "Long form text for details page." },
+        "thumbnail": { "type": "string", "format": "uri", "description": "URL to the main image." },
+        "gallery": { "type": "array", "items": { "type": "string", "format": "uri" }, "description": "Additional project images." },
+        "videoUrl": { "type": "string", "format": "uri", "description": "Optional video demo URL." },
+        "demoUrl": { "type": "string", "format": "uri", "description": "Optional iframe demo URL." },
+        "liveUrl": { "type": "string", "format": "uri", "description": "External live project URL." },
+        "category": { "type": "string", "enum": ["Mobile App", "Web App", "Website", "AI", "SaaS", "E-commerce"], "description": "Project category for filtering." },
+        "tags": { "type": "array", "items": { "type": "string" }, "description": "Modern tech stack tags." },
+        "techStack": { "type": "array", "items": { "type": "string" }, "description": "Detailed technology list." },
+        "isFeatured": { "type": "boolean", "description": "Whether to highlight on homepage." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "ISO timestamp of creation." }
+      },
+      "required": ["title", "shortDescription", "fullDescription", "thumbnail", "liveUrl", "category", "isFeatured", "createdAt"]
+    },
+    "Lead": {
+      "title": "Lead",
+      "description": "A contact inquiry from a potential client.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Sender's full name." },
+        "email": { "type": "string", "format": "email", "description": "Sender's contact email." },
+        "message": { "type": "string", "description": "The inquiry message." },
+        "projectId": { "type": "string", "description": "Optional ID of a project they were viewing." },
+        "interest": { "type": "string", "description": "Type of service requested." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "ISO timestamp of submission." }
+      },
+      "required": ["name", "email", "message", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "Collection of showcase projects."
+    },
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "User inquiries and potential business leads."
+    }
+  }
+}

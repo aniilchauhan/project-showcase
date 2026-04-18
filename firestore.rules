@@ -1,0 +1,93 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helper Functions ---
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Check if the user is an admin. 
+    // For this context, we'll check if the user is the owner defined in a special collection OR matches a list.
+    // In many AI studio apps, the user email is a good starting point for a bootstrapped admin.
+    // Replace with real logic if an 'admins' collection is added.
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == '1109anilchauhan@gmail.com'
+      );
+    }
+
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Validation Blueprints ---
+
+    function isValidProject(data) {
+      return data.keys().hasAll(['title', 'shortDescription', 'fullDescription', 'thumbnail', 'liveUrl', 'category', 'isFeatured', 'createdAt'])
+        && data.title is string && data.title.size() <= 200
+        && data.shortDescription is string && data.shortDescription.size() <= 500
+        && data.fullDescription is string && data.fullDescription.size() <= 5000
+        && data.thumbnail is string && data.thumbnail.size() <= 1000
+        && data.liveUrl is string && data.liveUrl.size() <= 1000
+        && data.category in ['Mobile App', 'Web App', 'Website', 'AI', 'SaaS', 'E-commerce']
+        && data.isFeatured is bool
+        && data.createdAt is timestamp;
+    }
+
+    function isValidLead(data) {
+      return data.keys().hasAll(['name', 'email', 'message', 'interest', 'createdAt'])
+        && data.name is string && data.name.size() <= 100
+        && data.email is string && data.email.size() <= 200 && data.email.matches('^[^@]+@[^@]+\\.[^@]+$')
+        && data.message is string && data.message.size() <= 2000
+        && data.interest is string && data.interest.size() <= 100
+        && data.createdAt == request.time;
+    }
+
+    // --- Collection Rules ---
+
+    match /projects/{projectId} {
+      allow get: if true;
+      allow list: if true;
+      
+      // Admin only writes
+      allow create: if isAdmin() && isValidProject(incoming()) && isValidId(projectId);
+      allow update: if isAdmin() && isValidProject(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /leads/{leadId} {
+      // Public can create inquiries
+      allow create: if isValidLead(incoming()) && isValidId(leadId);
+      
+      // Admin can manage leads
+      allow get, list, delete: if isAdmin();
+      allow update: if false; // Inquiries are immutable
+    }
+
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if false; // Managed via console or super-admin
+    }
+  }
+}
